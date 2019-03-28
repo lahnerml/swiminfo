@@ -1,0 +1,117 @@
+#!/usr/bin/python
+
+"""
+Copyright (c) 2019 Michael Lahnert
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
+
+import sys
+
+
+def parse_input(params):
+    ctr = 1
+    args = {}
+    while ctr < len(params):
+        if params[ctr] == "length":
+            args["length"] = float(params[ctr+1])
+        elif params[ctr] == "dive" or params[ctr] == "divedist":
+            args["dive_dist"] = float(params[ctr+1])
+        elif params[ctr] == "size":
+            args["size"] = float(params[ctr+1])
+        elif params[ctr] == "arm" or params[ctr] == "armspan":
+            args["arm_span"] = float(params[ctr+1])
+        elif params[ctr] == "stroke" or params[ctr] == "strokes":
+            args["strokes"] = float(params[ctr+1])
+        elif params[ctr] == "ratio":
+            args["ratio"] = float(params[ctr+1])
+        elif params[ctr] == "opt":
+            args["opt"] = True
+            ctr -= 1
+        elif params[ctr] == "lim":
+            args["lim"] = True
+        else:
+            raise Exception("Invalid input")
+        ctr += 2
+    return args
+
+
+def print_info(swim_info):
+    print("Pool length: {}, diving distance: {}, strokes: {}, ratio: {}"
+          .format(swim_info.length, swim_info.dive_dist,
+                  swim_info.strokes, swim_info.ratio))
+
+
+def calc_opt_strokes(length, dive_dist, arm_span):
+    return (length - dive_dist) / arm_span
+
+
+def calc_stroke_ratio(length, dive_dist, size, strokes):
+    effective_length = length - dive_dist
+    dist_per_stroke = effective_length / strokes
+    return dist_per_stroke / size
+
+
+def calc_stroke_length(length, dive_dist, size, ratio=0):
+    effective_length = length - dive_dist
+    if ratio == 0:
+        size_ratio = [0.55 * size, 0.7 * size]
+    else:
+        if isinstance(ratio, list):
+            size_ratio = [r * size for r in ratio]
+        else:
+            size_ratio = [ratio * size]
+    strokes = [effective_length / sr for sr in size_ratio]
+    return strokes
+
+
+class si:
+    def __init__(self, **kwargs):
+        self.ratio = 0
+        if "length" in kwargs:
+            self.length = kwargs["length"]
+        if "size" in kwargs:
+            self.size = kwargs["size"]
+        if "arm_span" in kwargs:
+            self.arm_span = kwargs["arm_span"]
+        if "dive_dist" in kwargs:
+            self.dive_dist = kwargs["dive_dist"]
+        else:
+            self.dive_dist = 4.0
+        if "ratio" in kwargs:
+            self.ratio = kwargs["ratio"]
+            self.strokes = calc_stroke_length(self.length, self.dive_dist,
+                                              self.size, self.ratio)
+        if "opt" in kwargs:
+            self.strokes = calc_opt_strokes(self.length, self.dive_dist,
+                                            self.arm_span)
+        if "lim" in kwargs:
+            self.strokes = calc_stroke_length(self.length, self.dive_dist,
+                                              self.size, [0.55, 0.7])
+        if "strokes" in kwargs:
+            self.strokes = kwargs["strokes"]
+            self.ratio = calc_stroke_ratio(self.length, self.dive_dist,
+                                           self.size, self.strokes)
+
+
+if __name__ == "__main__":
+    args = parse_input(sys.argv)
+    s = si(**args)
+    print_info(s)
