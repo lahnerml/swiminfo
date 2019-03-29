@@ -47,6 +47,7 @@ def parse_input(params):
             ctr -= 1
         elif params[ctr] == "lim":
             args["lim"] = True
+            ctr -= 1
         else:
             raise Exception("Invalid input")
         ctr += 2
